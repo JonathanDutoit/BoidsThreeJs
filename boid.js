@@ -1,117 +1,131 @@
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+
 class Boid {
     constructor() {
-        this.position = createVector(random(width), random(height));
-        this.velocity = p5.Vector.random2D();
-        this.velocity.setMag(random(2, 4));
-        this.acceleration = createVector();
+        // Create a point (small sphere)
+        const geometry = new THREE.SphereGeometry(0.05, 32, 32);
+        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        this.mesh = new THREE.Mesh(geometry, material);
+
+        // Vectors
+        this.position = new THREE.Vector3(
+            randomInRange(-5, 0),
+            randomInRange(-5, 0),
+            randomInRange(-5, 0)
+        );
+
+        // Speed and Acceleration vectors
+        this.speed = new THREE.Vector3(
+            randomInRange(2, 4),
+            randomInRange(2, 4),
+            randomInRange(2, 4)
+        );
+
+        this.acceleration = new THREE.Vector3();  // Initialize acceleration as zero
+
+        // Set initial position for the mesh
+        this.mesh.position.copy(this.position);
+
         this.maxForce = 1;
-        this.maxSpeed = 4;
+        this.maxSpeed = 0.1;
     }
 
-    edges() {
-        if(this.position.x > width) {
-            this.position.x = 0;
-        } else if(this.position.x < 0){
-            this.position.x = width;
+    applyForce(force) {
+        this.acceleration.add(force);
+        this.acceleration.clampLength(0, this.maxForce);
+    }
+
+    // Update the boid's position based on speed and acceleration
+    updatePosition() {
+        this.position.add(this.speed);
+
+        this.speed.add(this.acceleration);
+        this.speed.clampLength(0, this.maxSpeed);
+
+        this.acceleration.set(0, 0, 0);
+
+        // Set the new position of the mesh
+        this.mesh.position.copy(this.position);
+
+    }
+
+    // Function to calculate the camera's bounds
+    getCameraView(camera, dist) {
+        const vFOV = THREE.MathUtils.degToRad(camera.fov);
+        const height = 2 * Math.tan(vFOV / 2) * dist;
+        const width = height * camera.aspect;
+
+        return {
+            width: width,
+            height: height,
+        };
+    }
+
+    edges(camera) {
+        const cameraViewPort = this.getCameraView(camera, camera.position.distanceTo(this.position));
+        if (this.position.x > cameraViewPort.width / 2) {
+            this.position.x = -cameraViewPort.width / 2;
+        } else if (this.position.x < -cameraViewPort.width / 2) {
+            this.position.x = cameraViewPort.width / 2;
         }
 
-        if(this.position.y > height) {
-            this.position.y = 0;
-        } else if(this.position.y < 0){
-            this.position.y = height;
+        if (this.position.y > cameraViewPort.height / 2) {
+            this.position.y = -cameraViewPort.height / 2;
+        } else if (this.position.y < -cameraViewPort.height / 2) {
+            this.position.y = cameraViewPort.height / 2;
         }
+
+        if (this.position.z > camera.position.z / 2)
+            this.position.z = 0;
+
+    }
+
+    // Update the boid's scale based on the camera's distance
+    updateScale(camera) {
+        // Calculate distance from camera
+        const distance = camera.position.distanceTo(this.position);
+
+        // Update point scale based on distance
+        const scale = Math.max(0.1, 1 / distance);
+        this.mesh.scale.set(scale, scale, scale);
+    }
+
+    // Main update method for the boid
+    update(camera) {
+        this.edges(camera);
+        this.updatePosition();
+        this.updateScale(camera);
     }
 
     align(boids) {
-        let groupVelocity = createVector();
-        let perceptionRadius = 50;
+        let groupVelocity = new THREE.Vector3(0, 0, 0);
+        let perceptionRadius = 1000;
         let total = 0;
         for (let neighbor of boids) {
-            let d = dist(this.position.x, this.position.y, neighbor.position.x, neighbor.position.y)
+            let d = this.position.distanceTo(neighbor.position);
             if (neighbor != this && d < perceptionRadius) {
-                groupVelocity.add(neighbor.velocity);
+                groupVelocity.add(neighbor.speed);
                 total++;
+
             }
 
         }
-        if(total > 0) {
-            groupVelocity.div(total);
-            groupVelocity.setMag(this.maxSpeed);
-            groupVelocity.sub(this.velocity);
-            groupVelocity.limit(this.maxForce);
+        if (total > 0) {
+            groupVelocity.divideScalar(total);
+            groupVelocity.sub(this.speed);
         }
         return groupVelocity;
     }
 
-    separation(boids) {
-        let perceptionRadius = 50;
-        let steering = createVector();
-        let total = 0;
-        for (let neighbor of boids) {
-            let d = dist(this.position.x, this.position.y, neighbor.position.x, neighbor.position.y)
-            if (neighbor != this && d < perceptionRadius) {
-                let diff = p5.Vector.sub(this.position, neighbor.position);
-                diff.div(d);
-                steering.add(diff);
-                total++;
-            }
-
-        }
-        if(total > 0) {
-            steering.div(total);
-            steering.setMag(this.maxSpeed);
-            steering.sub(this.velocity);
-            steering.limit(this.maxForce);
-        }
-        return steering;
-    }
-
-    cohesion(boids) {
-        let groupPosition = createVector();
-        let perceptionRadius = 50;
-        let total = 0;
-        for (let neighbor of boids) {
-            let d = dist(this.position.x, this.position.y, neighbor.position.x, neighbor.position.y)
-            if (neighbor != this && d < perceptionRadius) {
-                groupPosition.add(neighbor.position);
-                total++;
-            }
-
-        }
-        if(total > 0) {
-            groupPosition.div(total);
-            groupPosition.sub(this.position);
-            groupPosition.setMag(this.maxSpeed);
-            groupPosition.sub(this.velocity);
-            groupPosition.limit(this.maxForce);
-        }
-        return groupPosition;
-    }
-
     flock(boids) {
         let alignment = this.align(boids);
-        let cohesion = this.cohesion(boids);
-        let separation = this.separation(boids);
-
-        separation.mult(separationSlider.value());
-        cohesion.mult(separationSlider.value());
-        alignment.mult(separationSlider.value());
-
-        this.acceleration.add(separation);
-        this.acceleration.add(cohesion);
-        this.acceleration.add(alignment);
-    }
- 
-    update() {
-        this.position.add(this.velocity);
-        this.velocity.add(this.acceleration);
-        this.velocity.limit(this.maxSpeed);
-        this.acceleration.mult(0);
-    }
-
-    show() {
-        strokeWeight(8);
-        stroke(255);
-        point(this.position.x, this.position.y);
+        this.applyForce(alignment);
     }
 }
+
+// Helper function to generate a random value within a range
+function randomInRange(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+export default Boid;
