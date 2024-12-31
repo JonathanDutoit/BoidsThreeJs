@@ -10,10 +10,12 @@ document.body.appendChild(renderer.domElement);
 
 // Create a Boid instance and add its mesh to the scene
 const boids = []
-for (let i = 0; i < 100; i++){
+for (let i = 0; i < 1000; i++){
     const boid = new Boid();
     boids.push(boid);
     scene.add(boid.mesh);
+   // scene.add(boid.speedArrow);
+    //scene.add(boid.accelerationArrow);
 }
 
 // Set initial camera position
