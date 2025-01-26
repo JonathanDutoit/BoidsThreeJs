@@ -60,7 +60,6 @@ class Boid {
         if(total > 0) {
             steering.div(total);
             steering.setMag(this.maxSpeed);
-            steering.sub(this.velocity);
             steering.limit(this.maxForce);
         }
         return steering;
