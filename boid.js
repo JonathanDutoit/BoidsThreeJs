@@ -2,17 +2,17 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.m
 
 class Boid {
     constructor(
-        maxForce = 0.005,
-        maxSpeed = 0.05,
-        alignRadius = 0.5,
-        separationRadius = 0.4,
-        cohesionRadius = 0.05,
+        maxForce = 20,
+        maxSpeed = 10,
+        alignRadius = 51,
+        separationRadius = 25,
+        cohesionRadius = 50,
         showArrows = false,
         showDebug = false,
         isLeader = false
     ) {
         // Boid properties
-        this.maxForce = maxForce;
+        this.maxForce = randomInRange(maxForce - 10, maxForce);
         this.maxSpeed = maxSpeed;
         this.alignRadius = alignRadius;
         this.separationRadius = separationRadius;
@@ -22,15 +22,15 @@ class Boid {
        
         // Boid mesh
         this.mesh = new THREE.Mesh(
-            new THREE.ConeGeometry(0.1, 0.2, 8),
+            new THREE.ConeGeometry(6, 10, 10),
             new THREE.MeshBasicMaterial({ color: isLeader ? 0x0000ff : 0xff0000, wireframe: true })
         );
 
         // Initialize position, speed, and acceleration
         this.position = new THREE.Vector3(
-            randomInRange(-0.3, 0.3),
-            randomInRange(-0.3, 0.3),
-            4
+            randomInRange(10, 20),
+            randomInRange(10, 20),
+            5
         );
         this.speed = new THREE.Vector3(
             0,
@@ -48,14 +48,17 @@ class Boid {
         }
 
         if (showDebug) {
+            // Alignement is green
             this.debugAlignSphere = new THREE.Mesh(
                 new THREE.SphereGeometry(this.alignRadius, 16, 16),
                 new THREE.MeshBasicMaterial({ wireframe: true, color: 0x00ff00 })
             );
+             // Separation is red
             this.debugSeparationSphere = new THREE.Mesh(
                 new THREE.SphereGeometry(this.separationRadius, 16, 16),
                 new THREE.MeshBasicMaterial({ wireframe: true, color: 0xff0000 })
             );
+             // Cohesion is blue
             this.debugCohesionSphere = new THREE.Mesh(
                 new THREE.SphereGeometry(this.cohesionRadius, 16, 16),
                 new THREE.MeshBasicMaterial({ wireframe: true, color: 0x0000ff })
@@ -194,7 +197,7 @@ class Boid {
         return groupPosition;
     }
 
-    followLeader(leader, curve, t) {
+    followLeader(curve, t) {
         if (!this.isLeader) {
             const target = curve.getPointAt(t);
             const desired = new THREE.Vector3().subVectors(target, this.position).normalize().multiplyScalar(this.maxSpeed);
@@ -203,12 +206,12 @@ class Boid {
         }
     }
 
-    flock(boids, leader, curve, t) {
+    flock(boids, curve, t) {
         if (!this.isLeader) {
             this.applyForce(this.align(boids));
             this.applyForce(this.separation(boids));
             this.applyForce(this.cohesion(boids));
-            this.followLeader(leader, curve, t);
+            //this.followLeader(curve, t);
         }
     }
 }

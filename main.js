@@ -1,75 +1,128 @@
+/**
+ * Boid Simulation using Three.js
+ * 
+ * This script creates a 3D simulation of a leader boid following a cubic Bézier curve,
+ * along with additional boids that follow the leader using flocking behavior.
+ */
+
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
 import Boid from './boid.js';
 
+// Create the scene
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 10);
+scene.background = new THREE.Color(0x000000);
+
+/**
+ * Creates a perspective camera for the scene.
+ * 
+ * @param {number} 50 - Field of view (FOV) in degrees. Determines how wide the camera's view is.
+ * @param {number} window.innerWidth / window.innerHeight - Aspect ratio of the camera.
+ * @param {number} 0.1 - Near clipping plane. Objects closer than this distance won't be rendered.
+ * @param {number} 10 - Far clipping plane. Objects farther than this distance won't be rendered.
+ * 
+ * A higher FOV makes the view appear more distorted (wide-angle), while a lower FOV gives a zoomed-in effect.
+ */
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10000);
+camera.position.set(0, 250, 1000);
+
+
+// Create the renderer
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+/**
+ * Creates an adaptive Catmull-Rom curve that scales with the window size.
+ */
+/**
+ * Creates an adaptive Catmull-Rom curve that scales with the window size.
+ */
+const basePoints = [
+    [494, 528, -145], [-88, 256, 207], [-355, 280, 547],
+    [-409, 551, -12], [-222, 400, -97], [37, 47, 246],
+    [641, 120, -228], [585, 528, -342]
+];
+const scaleFactor = Math.min(window.innerWidth, window.innerHeight) / 500;
+const curve = new THREE.CatmullRomCurve3(basePoints.map(p => new THREE.Vector3(p[0] * scaleFactor, p[1] * scaleFactor, p[2] * scaleFactor)));
 
-// Create a cubic Bézier curve
-const curve = new THREE.CubicBezierCurve3(
-    new THREE.Vector3(3, 2, 0),
-    new THREE.Vector3(-2, -4, 1),
-    new THREE.Vector3(-3, -2, 4),
-    new THREE.Vector3(3, 2, 0)
-);
 
-// Create a leader boid
-const leader = new Boid(0.005, 0.02, 0.2, 0.075, 0.1, true, false, true);
+
+/**
+ * Creates the leader boid with specific movement parameters.
+ */
+const leader = new Boid(10, 0.02, 0.2, 0.075, 0.1, true, false, true);
 scene.add(leader.mesh);
 
-//scene.add(leader.accelerationArrow);
-//scene.add(leader.speedArrow);
+
+// Uncomment the lines below to visualize acceleration and speed vectors
+// scene.add(leader.accelerationArrow);
+// scene.add(leader.speedArrow);
+
+// Array to store boids
+const boids = [];
 
 
-// Create a Boid instance and add its mesh to the scene
-const boids = []
-for (let i = 0; i < 100; i++){
+/**
+ * Initializes additional boids and adds them to the scene.
+ * Currently, the loop is set to zero boids (change the loop condition to add more).
+ */
+for (let i = 0; i < 100; i++) {
     const boid = new Boid();
     boids.push(boid);
     scene.add(boid.mesh);
-    //scene.add(boid.accelerationArrow);
-    //scene.add(boid.speedArrow);
+    // Uncomment to visualize acceleration and speed vectors
+    // scene.add(boid.accelerationArrow);
+    // scene.add(boid.speedArrow);
 }
 
-// Set initial camera position
-camera.position.z = 10;
 
 let currentTime = 0;
-let deltaT = 0.0025;
+let lastUpdateTime = performance.now();
 
-// Function to format time in seconds
+/**
+ * Formats elapsed time in seconds.
+ * @param {number} seconds - The time in seconds.
+ * @returns {string} - The formatted time string.
+ */
 function formatTime(seconds) {
-    return `${seconds.toFixed(2)}s`;
+    return seconds.toFixed(2) + 's';
+
 }
 
-// Update the elapsed time every second
+// Update the elapsed time display every 10ms
 setInterval(() => {
-    currentTime += deltaT;
     const timeElement = document.getElementById('elapsed-time');
-    timeElement.innerText = `Elapsed Time: ${formatTime(currentTime)}`;
+    if (timeElement) {
+        timeElement.innerText = `Elapsed Time: ${formatTime(currentTime * 10)}`;
+    }
 }, 10);
 
-// Animation loop
+/**
+ * Animation loop to update the scene and move boids.
+ */
 function animate() {
     requestAnimationFrame(animate);
 
-    if(currentTime > 1) currentTime = 0;
+    let now = performance.now();
+    let deltaTime = (now - lastUpdateTime) / 10000; // Convert to seconds
+    lastUpdateTime = now;
 
-     // Update leader position along the curve
-     leader.position.copy(curve.getPointAt(currentTime));
-     leader.speed.copy(leader.position);
-     leader.rotateTowardsDirection();
-     leader.update(camera);
- 
-    // Update boids
-    for(let boid of boids){
-        boid.flock(boids, leader, curve, currentTime);
+    currentTime = (currentTime + deltaTime) % 1;
+    
+
+    // Update leader position along the curve
+    const prevPosition = leader.position.clone();
+    leader.position.copy(curve.getPointAt(currentTime));
+    leader.speed.copy(leader.position.clone().sub(prevPosition));
+    leader.update(camera);
+
+    // Update all boids
+    for (let boid of boids) {
+        boid.flock(boids, curve, currentTime);
         boid.update(camera);
     }
 
+    // Render the scene
     renderer.render(scene, camera);
 }
 
@@ -78,7 +131,22 @@ window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Update curve dynamically on resize
+    const newScaleFactor = Math.min(window.innerWidth, window.innerHeight) / 500;
+    curve.points.forEach((point, index) => {
+        const basePoints = [
+            [494, 528, -145], [-88, 256, 207], [-355, 280, 547],
+            [-409, 551, -12], [-222, 400, -97], [37, 47, 246],
+            [641, 120, -228], [585, 528, -342]
+        ];
+        point.set(
+            basePoints[index][0] * newScaleFactor,
+            basePoints[index][1] * newScaleFactor,
+            basePoints[index][2] * newScaleFactor
+        );
+    });
 });
 
-// Start animation
+// Start the animation loop
 animate();
