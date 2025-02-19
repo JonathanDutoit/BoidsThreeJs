@@ -11,11 +11,11 @@ class Boid {
      * @param {*} isLeader 
      */
     constructor(
-        alignmentCoefficient = 0.5,
-        cohesionCoefficient = 0.5,
-        separationCoefficient = 0.5,
-        alignCohesionRadius = 10,
-        separationRadius = 5,
+        alignmentCoefficient = 0.1,
+        cohesionCoefficient = 0.001,
+        separationCoefficient = 0.001,
+        alignCohesionRadius = 2000,
+        separationRadius = 20,
         isLeader = false
     ) {
         // Boid properties
@@ -34,15 +34,15 @@ class Boid {
 
         // Initialize position, speed, and acceleration
         this.position = new THREE.Vector3(
-            THREE.MathUtils.randInt(-20, 20),
-            THREE.MathUtils.randInt(-20, 20),
+            THREE.MathUtils.randInt(-400, 400),
+            THREE.MathUtils.randInt(0, 500),
             THREE.MathUtils.randInt(0, 8)
         );
 
         this.speed = new THREE.Vector3(
-            THREE.MathUtils.randInt(0, 10),
-            THREE.MathUtils.randInt(0, 10),
-            THREE.MathUtils.randInt(0, 10)
+            THREE.MathUtils.randInt(-1, 1),
+            THREE.MathUtils.randInt(-1, 1),
+            THREE.MathUtils.randInt(-1, 1)
         );
 
         this.mesh.position.copy(this.position);
@@ -64,12 +64,11 @@ class Boid {
      */
     updateBoidPosition(boids) {
         this.alignmentSteer(boids);
-        this.cohesionSteer(boids);
-        this.separationSteer(boids);
+        //this.cohesionSteer(boids);
+        //this.separationSteer(boids);
 
-        const prevPosition = this.position.clone();
 
-        this.position.copy(this.speed.clone().add(prevPosition));
+        this.position.add(this.speed);
 
         this.mesh.position.copy(this.position);
     }
@@ -95,13 +94,19 @@ class Boid {
             if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.alignCohesionRadius) {
                 tempVector.copy(neighbor.speed);
                 groupVelocity.add(tempVector);
+
                 nbBoidsInRadius++;
             }
         }
 
         if (nbBoidsInRadius > 0) {
             groupVelocity.divideScalar(nbBoidsInRadius);
-            this.speed.add(groupVelocity.multiplyScalar(this.alignmentCoefficient));
+            
+            const previousSpeed = this.speed.clone();
+
+            // sub( v: Vector3) -> substracts v from this vector 
+            const steerVector = groupVelocity.sub(previousSpeed).multiplyScalar(this.alignmentCoefficient);
+            this.speed.copy(previousSpeed.add(steerVector));
         }
     }
 
