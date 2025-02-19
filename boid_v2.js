@@ -6,7 +6,8 @@ class Boid {
      * @param {*} alignmentCoefficient 
      * @param {*} cohesionCoefficient 
      * @param {*} separationCoefficient 
-     * @param {*} alignCohesionRadius 
+     * @param {*} alignementRadius
+     * @param {*} cohesionRadius 
      * @param {*} separationRadius 
      * @param {*} isLeader 
      */
@@ -14,7 +15,8 @@ class Boid {
         alignmentCoefficient = 0.1,
         cohesionCoefficient = 0.001,
         separationCoefficient = 0.001,
-        alignCohesionRadius = 2000,
+        alignementRadius = 2000,
+        cohesionRadius = 20,
         separationRadius = 20,
         isLeader = false
     ) {
@@ -22,7 +24,8 @@ class Boid {
         this.alignmentCoefficient = alignmentCoefficient;
         this.cohesionCoefficient = cohesionCoefficient;
         this.separationCoefficient = separationCoefficient;
-        this.alignCohesionRadius = alignCohesionRadius;
+        this.alignementRadius = alignementRadius;
+        this.cohesionRadius = cohesionRadius;
         this.separationRadius = separationRadius;
         this.isLeader = isLeader;
 
@@ -91,7 +94,7 @@ class Boid {
         let nbBoidsInRadius = 0;
 
         for (let neighbor of boids) {
-            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.alignCohesionRadius) {
+            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.alignementRadius) {
                 tempVector.copy(neighbor.speed);
                 groupVelocity.add(tempVector);
 
@@ -118,7 +121,7 @@ class Boid {
         let nbBoidsInRadius = 0;
 
         for (let neighbor of boids) {
-            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.alignCohesionRadius) {
+            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.cohesionCoefficient) {
                 groupPosition.add(neighbor.position);
                 nbBoidsInRadius++;
             }

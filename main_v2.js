@@ -50,7 +50,7 @@ const curve = new THREE.CatmullRomCurve3(basePoints.map(p => new THREE.Vector3(p
 /**
  * Creates the leader boid with specific movement parameters.
  */
-const leader = new Boid(0.5, 0.5, 0.5, 10, 5, true);
+const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 5, true);
 scene.add(leader.mesh);
 
 
