@@ -12,11 +12,11 @@ class Boid {
      * @param {*} isLeader 
      */
     constructor(
-        alignmentCoefficient = 0.1,
-        cohesionCoefficient = 0.001,
-        separationCoefficient = 0.001,
-        alignementRadius = 2000,
-        cohesionRadius = 20,
+        alignmentCoefficient = 1,
+        cohesionCoefficient = 0.01,
+        separationCoefficient = 0.5,
+        alignementRadius = 400,
+        cohesionRadius = 100,
         separationRadius = 20,
         isLeader = false
     ) {
@@ -39,7 +39,7 @@ class Boid {
         this.position = new THREE.Vector3(
             THREE.MathUtils.randInt(-400, 400),
             THREE.MathUtils.randInt(0, 500),
-            THREE.MathUtils.randInt(0, 8)
+            THREE.MathUtils.randInt(0, 10)
         );
 
         this.speed = new THREE.Vector3(
@@ -67,9 +67,8 @@ class Boid {
      */
     updateBoidPosition(boids) {
         this.alignmentSteer(boids);
-        //this.cohesionSteer(boids);
-        //this.separationSteer(boids);
-
+        this.cohesionSteer(boids);
+        this.separationSteer(boids);
 
         this.position.add(this.speed);
 
@@ -121,15 +120,22 @@ class Boid {
         let nbBoidsInRadius = 0;
 
         for (let neighbor of boids) {
-            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.cohesionCoefficient) {
+            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.cohesionRadius) {
                 groupPosition.add(neighbor.position);
                 nbBoidsInRadius++;
             }
         }
 
         if (nbBoidsInRadius > 0) {
-            groupPosition.divideScalar(nbBoidsInRadius).sub(this.position);
-            this.speed.add(groupPosition.multiplyScalar(this.cohesionCoefficient));
+            groupPosition.divideScalar(nbBoidsInRadius);
+
+            const previousPosition = this.position.clone();
+            const previousSpeed = this.speed.clone();
+
+
+            // sub( v: Vector3) -> substracts v from this vector 
+            const steerVector = groupPosition.sub(previousPosition).multiplyScalar(this.cohesionCoefficient);
+            this.speed.copy(previousSpeed.add(steerVector));
         }
     }
 
@@ -144,7 +150,7 @@ class Boid {
         for (let neighbor of boids) {
             const d = this.position.distanceTo(neighbor.position);
             if (neighbor !== this && d < this.separationRadius) {
-                tempVector.subVectors(this.position, neighbor.position).divideScalar(d * d);
+                tempVector.subVectors(this.position, neighbor.position).divideScalar(d);
                 steering.add(tempVector);
                 nbBoidsInRadius++;
             }
