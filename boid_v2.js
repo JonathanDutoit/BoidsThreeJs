@@ -15,7 +15,7 @@ class Boid {
         cohesionCoefficient = 0.5,
         separationCoefficient = 0.5,
         alignCohesionRadius = 10,
-        separationRadius = 10,
+        separationRadius = 5,
         isLeader = false
     ) {
         // Boid properties
@@ -34,15 +34,15 @@ class Boid {
 
         // Initialize position, speed, and acceleration
         this.position = new THREE.Vector3(
-            randomInRange(10, 20),
-            randomInRange(10, 20),
-            randomInRange(5, 6)
+            THREE.MathUtils.randInt(-20, 20),
+            THREE.MathUtils.randInt(-20, 20),
+            THREE.MathUtils.randInt(0, 8)
         );
 
         this.speed = new THREE.Vector3(
-            randomInRange(0, 10),
-            randomInRange(0, 10),
-            randomInRange(0, 10)
+            THREE.MathUtils.randInt(0, 10),
+            THREE.MathUtils.randInt(0, 10),
+            THREE.MathUtils.randInt(0, 10)
         );
 
         this.mesh.position.copy(this.position);
@@ -52,9 +52,11 @@ class Boid {
      * 
      */
     updateBoidProperties(camera, boids) {
-        this.updateBoidPosition(boids);
-        this.updateBoidScale(camera);
-        this.rotateTowardsDirection();
+        if(!this.isLeader) {
+            this.updateBoidPosition(boids);
+            this.updateBoidScale(camera);
+            this.rotateTowardsDirection();
+        }
     }
 
     /**
@@ -67,7 +69,7 @@ class Boid {
 
         const prevPosition = this.position.clone();
 
-        this.position.copy(this.speed.clone().clampLength(-10, 10).add(prevPosition));
+        this.position.copy(this.speed.clone().add(prevPosition));
 
         this.mesh.position.copy(this.position);
     }
@@ -171,16 +173,6 @@ class Boid {
         // Smoothly interpolate towards the target rotation
         this.mesh.quaternion.slerp(targetQuaternion, 0.1);
     }
-}
-
-/**
- * Helper function to generate a random value within a range
- * @param {*} min 
- * @param {*} max 
- * @returns 
- */
-function randomInRange(min, max) {
-    return Math.random() * (max - min) + min;
 }
 
 export default Boid;

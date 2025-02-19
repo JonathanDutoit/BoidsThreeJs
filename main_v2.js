@@ -60,7 +60,7 @@ scene.add(leader.mesh);
 
 // Array to store boids
 const boids = [];
-
+boids.push(leader);
 
 /**
  * Initializes additional boids and adds them to the scene.
@@ -108,7 +108,7 @@ function animate() {
     lastUpdateTime = now;
 
     currentTime = (currentTime + deltaTime) % 1;
-    
+
 
     // Update leader position along the curve
     const prevPosition = leader.position.clone();
