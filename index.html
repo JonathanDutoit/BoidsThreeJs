@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Three.js Moving Point</title>
     <style>
-        body { margin: 0; }
-        canvas { display: block; }
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            display: block;
+        }
+
         #elapsed-time {
             position: absolute;
             top: 10px;
@@ -17,10 +24,24 @@
             padding: 5px;
             border-radius: 3px;
         }
+
+
+        .lil-gui * {
+            font-size: 18px !important;
+            /* Bigger text */
+        }
+
+        .lil-gui.root {
+            width: 400px !important;
+            /* Wider panel */
+        }
+    </style>
     </style>
 </head>
+
 <body>
     <div id="elapsed-time">Elapsed Time: 0.00s</div>
     <script type="module" src="main_v2.js"></script>
 </body>
+
 </html>

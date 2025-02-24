@@ -1,5 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
 
+
 class Boid {
     /**
      * - Coefficients: take values between [0, 1] and represents how "fast" or "strong" the corresponding property is applied to Boids. 
@@ -12,13 +13,13 @@ class Boid {
      * @param {*} isLeader 
      */
     constructor(
-        alignmentCoefficient = 1,
-        cohesionCoefficient = 0.01,
-        separationCoefficient = 0.5,
-        alignementRadius = 400,
-        cohesionRadius = 100,
-        separationRadius = 20,
-        isLeader = false
+        alignmentCoefficient,
+        cohesionCoefficient,
+        separationCoefficient,
+        alignementRadius,
+        cohesionRadius,
+        separationRadius,
+        isLeader
     ) {
         // Boid properties
         this.alignmentCoefficient = alignmentCoefficient;
@@ -55,7 +56,7 @@ class Boid {
      * 
      */
     updateBoidProperties(camera, boids) {
-        if(!this.isLeader) {
+        if (!this.isLeader) {
             this.updateBoidPosition(boids);
             this.updateBoidScale(camera);
             this.rotateTowardsDirection();
@@ -66,6 +67,7 @@ class Boid {
      * 
      */
     updateBoidPosition(boids) {
+        console.log(this.alignementRadius);
         this.alignmentSteer(boids);
         this.cohesionSteer(boids);
         this.separationSteer(boids);
@@ -103,7 +105,7 @@ class Boid {
 
         if (nbBoidsInRadius > 0) {
             groupVelocity.divideScalar(nbBoidsInRadius);
-            
+
             const previousSpeed = this.speed.clone();
 
             // sub( v: Vector3) -> substracts v from this vector 
