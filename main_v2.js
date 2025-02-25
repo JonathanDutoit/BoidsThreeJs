@@ -5,9 +5,9 @@
  * along with additional boids that follow the leader using flocking behavior.
  */
 
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+import * as THREE from 'three';
 import Boid from './boid_v2.js';
-import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19.0/dist/lil-gui.esm.min.js';
+import GUI from 'lil-gui';
 
 // Create the scene
 const scene = new THREE.Scene();
@@ -42,7 +42,7 @@ const basePoints = [
     [-409, 551, -12], [-222, 400, -97], [37, 47, 246],
     [641, 120, -228], [585, 528, -342]
 ];
-const scaleFactor = Math.min(window.innerWidth, window.innerHeight) / 500;
+const scaleFactor = Math.min(window.innerWidth, window.innerHeight) / 1000;
 const curve = new THREE.CatmullRomCurve3(basePoints.map(p => new THREE.Vector3(p[0] * scaleFactor, p[1] * scaleFactor, p[2] * scaleFactor)));
 
 /**
@@ -52,6 +52,8 @@ const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 5, true);
 scene.add(leader.mesh);
 
 
+
+
 // Array to store boids
 const boids = [];
 boids.push(leader);
@@ -59,10 +61,10 @@ boids.push(leader);
 const gui = new GUI();
 const boidSettings = {
     alignmentCoefficient: 1,
-    cohesionCoefficient: 0.001,
+    cohesionCoefficient: 0.05,
     separationCoefficient: 0.5,
-    alignmentRadius: 2000, 
-    cohesionRadius: 2000,
+    alignmentRadius: 1000,
+    cohesionRadius: 20,
     separationRadius: 40
 };
 
@@ -160,7 +162,7 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     // Update curve dynamically on resize
-    const newScaleFactor = Math.min(window.innerWidth, window.innerHeight) / 500;
+    const newScaleFactor = Math.min(window.innerWidth, window.innerHeight) / 1000;
     curve.points.forEach((point, index) => {
         const basePoints = [
             [494, 528, -145], [-88, 256, 207], [-355, 280, 547],

@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+import * as THREE from 'three';
 
 
 class Boid {
@@ -7,7 +7,7 @@ class Boid {
      * @param {*} alignmentCoefficient 
      * @param {*} cohesionCoefficient 
      * @param {*} separationCoefficient 
-     * @param {*} alignementRadius
+     * @param {*} alignmentRadius
      * @param {*} cohesionRadius 
      * @param {*} separationRadius 
      * @param {*} isLeader 
@@ -16,7 +16,7 @@ class Boid {
         alignmentCoefficient,
         cohesionCoefficient,
         separationCoefficient,
-        alignementRadius,
+        alignmentRadius,
         cohesionRadius,
         separationRadius,
         isLeader
@@ -25,14 +25,14 @@ class Boid {
         this.alignmentCoefficient = alignmentCoefficient;
         this.cohesionCoefficient = cohesionCoefficient;
         this.separationCoefficient = separationCoefficient;
-        this.alignementRadius = alignementRadius;
+        this.alignmentRadius = alignmentRadius;
         this.cohesionRadius = cohesionRadius;
         this.separationRadius = separationRadius;
         this.isLeader = isLeader;
 
         // Boid mesh
         this.mesh = new THREE.Mesh(
-            new THREE.ConeGeometry(6, 10, 10),
+            new THREE.ConeGeometry(2, 4, 8),
             new THREE.MeshBasicMaterial({ color: isLeader ? 0x0000ff : 0xff0000, wireframe: true })
         );
 
@@ -67,7 +67,6 @@ class Boid {
      * 
      */
     updateBoidPosition(boids) {
-        console.log(this.alignementRadius);
         this.alignmentSteer(boids);
         this.cohesionSteer(boids);
         this.separationSteer(boids);
@@ -95,7 +94,7 @@ class Boid {
         let nbBoidsInRadius = 0;
 
         for (let neighbor of boids) {
-            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.alignementRadius) {
+            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.alignmentRadius) {
                 tempVector.copy(neighbor.speed);
                 groupVelocity.add(tempVector);
 
