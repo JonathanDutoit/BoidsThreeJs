@@ -23,7 +23,7 @@ scene.background = new THREE.Color(0x000000);
  * 
  * A higher FOV makes the view appear more distorted (wide-angle), while a lower FOV gives a zoomed-in effect.
  */
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10000);
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
 camera.position.set(0, 250, 1000);
 
 // Create the renderer
@@ -51,21 +51,18 @@ const curve = new THREE.CatmullRomCurve3(basePoints.map(p => new THREE.Vector3(p
 const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 5, true);
 scene.add(leader.mesh);
 
-
-
-
 // Array to store boids
 const boids = [];
-boids.push(leader);
+//boids.push(leader);
 
 const gui = new GUI();
 const boidSettings = {
-    alignmentCoefficient: 1,
-    cohesionCoefficient: 0.05,
-    separationCoefficient: 0.5,
-    alignmentRadius: 1000,
-    cohesionRadius: 20,
-    separationRadius: 40
+    alignmentCoefficient: 0,
+    cohesionCoefficient: 0,
+    separationCoefficient: 0,
+    alignmentRadius: 0,
+    cohesionRadius: 0,
+    separationRadius: 0
 };
 
 // Define parameter ranges
@@ -90,7 +87,7 @@ Object.entries(settingRanges).forEach(([key, [min, max]]) => {
  * Initializes additional boids and adds them to the scene.
  * Currently, the loop is set to zero boids (change the loop condition to add more).
  */
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < 200; i++) {
     const boid = new Boid(
         boidSettings.alignmentCoefficient,
         boidSettings.cohesionCoefficient,

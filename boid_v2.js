@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ThreeMFLoader } from 'three/examples/jsm/Addons.js';
 
 
 class Boid {
@@ -32,7 +33,7 @@ class Boid {
 
         // Boid mesh
         this.mesh = new THREE.Mesh(
-            new THREE.ConeGeometry(2, 4, 8),
+            new THREE.ConeGeometry(1, 2, 8),
             new THREE.MeshBasicMaterial({ color: isLeader ? 0x0000ff : 0xff0000, wireframe: true })
         );
 
@@ -57,6 +58,7 @@ class Boid {
      */
     updateBoidProperties(camera, boids) {
         if (!this.isLeader) {
+            this.avoidEdges(camera);
             this.updateBoidPosition(boids);
             this.updateBoidScale(camera);
             this.rotateTowardsDirection();
@@ -70,6 +72,7 @@ class Boid {
         this.alignmentSteer(boids);
         this.cohesionSteer(boids);
         this.separationSteer(boids);
+        
 
         this.position.add(this.speed);
 
@@ -83,6 +86,22 @@ class Boid {
         const distance = Math.max(0.1, camera.position.distanceTo(this.position));
         const scale = Math.log(distance + 1); // Logarithmic scaling
         this.mesh.scale.set(scale, scale, scale);
+    }
+
+    /**
+     * 
+     * @param {*} camera 
+     */
+    avoidEdges(camera) {
+        const margin = 0.1; // Distance from edge to start avoiding
+
+        const projectedPosition = this.position.clone().project(camera);
+        if (projectedPosition.x > 1 - margin) {
+            this.speed.add(new THREE.Vector3(-2  * this.speed.x, -this.speed.y, -this.speed.z));
+        }
+        /* else if (this.position.x < -width / 2 + margin) this.applyForce(new THREE.Vector3(this.maxForce, 0, 0));
+        if (this.position.y > height / 2 - margin) this.applyForce(new THREE.Vector3(0, -this.maxForce, 0));
+        else if (this.position.y < -height / 2 + margin) this.applyForce(new THREE.Vector3(0, this.maxForce, 0)); */
     }
 
     /**
@@ -162,19 +181,6 @@ class Boid {
         }
         return steering;
 
-    }
-
-    /**
-     * 
-     * @param {*} camera 
-     * @param {*} dist 
-     * @returns 
-     */
-    getCameraView(camera, dist) {
-        const vFOV = THREE.MathUtils.degToRad(camera.fov);
-        const height = 2 * Math.tan(vFOV / 2) * dist;
-        const width = height * camera.aspect;
-        return { width, height };
     }
 
     /**
