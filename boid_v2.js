@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { ThreeMFLoader } from 'three/examples/jsm/Addons.js';
-
+import { SortUtils } from 'three/examples/jsm/Addons.js';
 
 class Boid {
     /**
@@ -10,7 +9,8 @@ class Boid {
      * @param {*} separationCoefficient 
      * @param {*} alignmentRadius
      * @param {*} cohesionRadius 
-     * @param {*} separationRadius 
+     * @param {*} separationRadius
+     * @param {*} turnFactor 
      * @param {*} isLeader 
      */
     constructor(
@@ -20,6 +20,7 @@ class Boid {
         alignmentRadius,
         cohesionRadius,
         separationRadius,
+        turnFactor,
         isLeader
     ) {
         // Boid properties
@@ -29,11 +30,12 @@ class Boid {
         this.alignmentRadius = alignmentRadius;
         this.cohesionRadius = cohesionRadius;
         this.separationRadius = separationRadius;
+        this.turnFactor = turnFactor;
         this.isLeader = isLeader;
 
         // Boid mesh
         this.mesh = new THREE.Mesh(
-            new THREE.ConeGeometry(1, 2, 8),
+            new THREE.ConeGeometry(2, 4, 8),
             new THREE.MeshBasicMaterial({ color: isLeader ? 0x0000ff : 0xff0000, wireframe: true })
         );
 
@@ -60,8 +62,8 @@ class Boid {
         if (!this.isLeader) {
             this.avoidEdges(camera);
             this.updateBoidPosition(boids);
-            this.updateBoidScale(camera);
             this.rotateTowardsDirection();
+            this.updateBoidScale(camera);
         }
     }
 
@@ -97,11 +99,24 @@ class Boid {
 
         const projectedPosition = this.position.clone().project(camera);
         if (projectedPosition.x > 1 - margin) {
-            this.speed.add(new THREE.Vector3(-2  * this.speed.x, -this.speed.y, -this.speed.z));
+            this.speed.add(new THREE.Vector3(-this.turnFactor, 0, 0));
+        } 
+        if (projectedPosition.x < -1 + margin) {
+            this.speed.add(new THREE.Vector3(this.turnFactor, 0, 0));
         }
-        /* else if (this.position.x < -width / 2 + margin) this.applyForce(new THREE.Vector3(this.maxForce, 0, 0));
-        if (this.position.y > height / 2 - margin) this.applyForce(new THREE.Vector3(0, -this.maxForce, 0));
-        else if (this.position.y < -height / 2 + margin) this.applyForce(new THREE.Vector3(0, this.maxForce, 0)); */
+        if(projectedPosition.y > 1 - margin) {
+            this.speed.add(new THREE.Vector3(0, -this.turnFactor, 0));
+        }
+        if(projectedPosition.y < -1 + margin) {
+            this.speed.add(new THREE.Vector3(0, this.turnFactor, 0));
+        }
+        console.log((projectedPosition.z -0.999) * 1000);
+        if((projectedPosition.z -0.999) * 1000 > 1 - margin) {
+            this.speed.add(new THREE.Vector3(0, 0, -2 * this.speed.z));
+        }
+        if((projectedPosition.z -0.999) * 1000 < -1 + margin) {
+            this.speed.add(new THREE.Vector3(0, 0, - 2 * this.speed.z));
+        }
     }
 
     /**

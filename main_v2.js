@@ -48,7 +48,7 @@ const curve = new THREE.CatmullRomCurve3(basePoints.map(p => new THREE.Vector3(p
 /**
  * Creates the leader boid with specific movement parameters.
  */
-const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 5, true);
+const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 5, 2, true);
 scene.add(leader.mesh);
 
 // Array to store boids
@@ -62,7 +62,8 @@ const boidSettings = {
     separationCoefficient: 0,
     alignmentRadius: 0,
     cohesionRadius: 0,
-    separationRadius: 0
+    separationRadius: 0,
+    turnFactor: 1,
 };
 
 // Define parameter ranges
@@ -72,7 +73,8 @@ const settingRanges = {
     separationCoefficient: [0, 1],
     alignmentRadius: [0, 2000],
     cohesionRadius: [0, 2000],
-    separationRadius: [0, 100]
+    separationRadius: [0, 100],
+    turnFactor: [0, 5]
 };
 
 // Create GUI dynamically
@@ -87,14 +89,16 @@ Object.entries(settingRanges).forEach(([key, [min, max]]) => {
  * Initializes additional boids and adds them to the scene.
  * Currently, the loop is set to zero boids (change the loop condition to add more).
  */
-for (let i = 0; i < 200; i++) {
+for (let i = 0; i < 100; i++) {
     const boid = new Boid(
         boidSettings.alignmentCoefficient,
         boidSettings.cohesionCoefficient,
         boidSettings.separationCoefficient,
         boidSettings.alignmentRadius,
         boidSettings.cohesionRadius,
-        boidSettings.separationRadius);
+        boidSettings.separationRadius,
+        boidSettings.turnFactor,
+        false);
 
     boids.push(boid);
     scene.add(boid.mesh);
