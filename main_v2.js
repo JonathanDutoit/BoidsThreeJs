@@ -51,7 +51,7 @@ const boids = [];
 /**
  * Creates the leader boid with specific movement parameters.
  */
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 0; i++) {
     const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 5, 2, true);
     scene.add(leader.mesh);
     boids.push(leader);

@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { SortUtils } from 'three/examples/jsm/Addons.js';
 
 class Boid {
     /**
