@@ -35,7 +35,7 @@ class Boid {
 
         // Boid mesh
         this.mesh = new THREE.Mesh(
-            new THREE.ConeGeometry(2, 4, 8),
+            new THREE.ConeGeometry(1, 2, 8),
             new THREE.MeshBasicMaterial({ color: isLeader ? 0x0000ff : 0xff0000, wireframe: true })
         );
 
@@ -75,6 +75,11 @@ class Boid {
         this.cohesionSteer(boids);
         this.separationSteer(boids);
         
+        const maxSpeed = 3;
+        const minSpeed = 1;
+
+        
+        this.speed.clampLength(minSpeed, maxSpeed);
 
         this.position.add(this.speed);
 
@@ -95,7 +100,7 @@ class Boid {
      * @param {*} camera 
      */
     avoidEdges(camera) {
-        const margin = 0.1; // Distance from edge to start avoiding
+        const margin = 0.3; // Distance from edge to start avoiding
 
         const projectedPosition = this.position.clone().project(camera);
         if (projectedPosition.x > 1 - margin) {
@@ -110,7 +115,6 @@ class Boid {
         if(projectedPosition.y < -1 + margin) {
             this.speed.add(new THREE.Vector3(0, this.turnFactor, 0));
         }
-        console.log((projectedPosition.z -0.999) * 1000);
         if((projectedPosition.z -0.999) * 1000 > 1 - margin) {
             this.speed.add(new THREE.Vector3(0, 0, -2 * this.speed.z));
         }
@@ -208,6 +212,10 @@ class Boid {
 
         // Smoothly interpolate towards the target rotation
         this.mesh.quaternion.slerp(targetQuaternion, 0.1);
+    }
+
+    getLeader() {
+        return this.isLeader;
     }
 }
 

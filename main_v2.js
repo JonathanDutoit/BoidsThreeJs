@@ -45,31 +45,33 @@ const basePoints = [
 const scaleFactor = Math.min(window.innerWidth, window.innerHeight) / 1000;
 const curve = new THREE.CatmullRomCurve3(basePoints.map(p => new THREE.Vector3(p[0] * scaleFactor, p[1] * scaleFactor, p[2] * scaleFactor)));
 
+// Array to store boids
+const boids = [];
+
 /**
  * Creates the leader boid with specific movement parameters.
  */
-const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 5, 2, true);
-scene.add(leader.mesh);
-
-// Array to store boids
-const boids = [];
-//boids.push(leader);
+for (let i = 0; i < 10; i++) {
+    const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 5, 2, true);
+    scene.add(leader.mesh);
+    boids.push(leader);
+}
 
 const gui = new GUI();
 const boidSettings = {
-    alignmentCoefficient: 0,
-    cohesionCoefficient: 0,
-    separationCoefficient: 0,
-    alignmentRadius: 0,
-    cohesionRadius: 0,
-    separationRadius: 0,
-    turnFactor: 1,
+    alignmentCoefficient: 0.05,
+    cohesionCoefficient: 0.0003,
+    separationCoefficient: 0.1,
+    alignmentRadius: 160,
+    cohesionRadius: 160,
+    separationRadius: 60,
+    turnFactor: 0.05,
 };
 
 // Define parameter ranges
 const settingRanges = {
     alignmentCoefficient: [0, 1],
-    cohesionCoefficient: [0, 1],
+    cohesionCoefficient: [0, 0.001],
     separationCoefficient: [0, 1],
     alignmentRadius: [0, 2000],
     cohesionRadius: [0, 2000],
@@ -89,7 +91,7 @@ Object.entries(settingRanges).forEach(([key, [min, max]]) => {
  * Initializes additional boids and adds them to the scene.
  * Currently, the loop is set to zero boids (change the loop condition to add more).
  */
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < 500; i++) {
     const boid = new Boid(
         boidSettings.alignmentCoefficient,
         boidSettings.cohesionCoefficient,
@@ -138,18 +140,19 @@ function animate() {
 
     currentTime = (currentTime + deltaTime) % 1;
 
-
-    // Update leader position along the curve
-    const prevPosition = leader.position.clone();
-    leader.position.copy(curve.getPointAt(currentTime));
-    leader.speed.copy(leader.position.clone().sub(prevPosition));
-    leader.updateBoidScale(camera);
-    leader.rotateTowardsDirection(camera);
-    leader.mesh.position.copy(leader.position);
-
     // Update all boids
     for (let boid of boids) {
-        boid.updateBoidProperties(camera, boids);
+        if(boid.getLeader() == false) {
+            boid.updateBoidProperties(camera, boids);
+        } else {
+             // Update leader position along the curve
+            const prevPosition = boid.position.clone();
+            boid.position.copy(curve.getPointAt(currentTime));
+            boid.speed.copy(boid.position.clone().sub(prevPosition));
+            boid.updateBoidScale(camera);
+            boid.rotateTowardsDirection(camera);
+            boid.mesh.position.copy(boid.position);
+        }
     }
 
     // Render the scene
