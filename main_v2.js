@@ -51,31 +51,32 @@ const boids = [];
 /**
  * Creates the leader boid with specific movement parameters.
  */
-for (let i = 0; i < 0; i++) {
-    const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 5, 2, true);
-    scene.add(leader.mesh);
-    boids.push(leader);
-}
+
+const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 10, 5, 2, true);
+boids.push(leader);
+
 
 const gui = new GUI();
 const boidSettings = {
     alignmentCoefficient: 0.05,
     cohesionCoefficient: 0.0003,
     separationCoefficient: 0.1,
-    alignmentRadius: 160,
-    cohesionRadius: 160,
-    separationRadius: 60,
+    followLeaderCoefficient: 40,
+    alignmentRadius: 80,
+    cohesionRadius: 80,
+    separationRadius: 40,
     turnFactor: 0.05,
 };
 
 // Define parameter ranges
 const settingRanges = {
     alignmentCoefficient: [0, 1],
-    cohesionCoefficient: [0, 0.001],
+    cohesionCoefficient: [0, 0.1],
     separationCoefficient: [0, 1],
-    alignmentRadius: [0, 2000],
-    cohesionRadius: [0, 2000],
-    separationRadius: [0, 100],
+    followLeaderCoefficient: [0.1, 100],
+    alignmentRadius: [0, 1000],
+    cohesionRadius: [0, 1000],
+    separationRadius: [0, 200],
     turnFactor: [0, 5]
 };
 
@@ -96,6 +97,7 @@ for (let i = 0; i < 500; i++) {
         boidSettings.alignmentCoefficient,
         boidSettings.cohesionCoefficient,
         boidSettings.separationCoefficient,
+        boidSettings.followLeaderCoefficient,
         boidSettings.alignmentRadius,
         boidSettings.cohesionRadius,
         boidSettings.separationRadius,
@@ -140,19 +142,17 @@ function animate() {
 
     currentTime = (currentTime + deltaTime) % 1;
 
+
+    const prevPosition = leader.position.clone();
+    leader.position.copy(curve.getPointAt(currentTime));
+    leader.speed.copy(leader.position.clone().sub(prevPosition));
+    leader.updateBoidScale(camera);
+    leader.rotateTowardsDirection(camera);
+    leader.mesh.position.copy(leader.position);
+
     // Update all boids
     for (let boid of boids) {
-        if(boid.getLeader() == false) {
-            boid.updateBoidProperties(camera, boids);
-        } else {
-             // Update leader position along the curve
-            const prevPosition = boid.position.clone();
-            boid.position.copy(curve.getPointAt(currentTime));
-            boid.speed.copy(boid.position.clone().sub(prevPosition));
-            boid.updateBoidScale(camera);
-            boid.rotateTowardsDirection(camera);
-            boid.mesh.position.copy(boid.position);
-        }
+        boid.updateBoidProperties(camera, boids, leader);
     }
 
     // Render the scene

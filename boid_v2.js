@@ -6,6 +6,7 @@ class Boid {
      * @param {*} alignmentCoefficient 
      * @param {*} cohesionCoefficient 
      * @param {*} separationCoefficient 
+     * @param {*} followLeaderCoefficient
      * @param {*} alignmentRadius
      * @param {*} cohesionRadius 
      * @param {*} separationRadius
@@ -16,6 +17,7 @@ class Boid {
         alignmentCoefficient,
         cohesionCoefficient,
         separationCoefficient,
+        followLeaderCoefficient,
         alignmentRadius,
         cohesionRadius,
         separationRadius,
@@ -26,6 +28,7 @@ class Boid {
         this.alignmentCoefficient = alignmentCoefficient;
         this.cohesionCoefficient = cohesionCoefficient;
         this.separationCoefficient = separationCoefficient;
+        this.followLeaderCoefficient = followLeaderCoefficient;
         this.alignmentRadius = alignmentRadius;
         this.cohesionRadius = cohesionRadius;
         this.separationRadius = separationRadius;
@@ -57,10 +60,10 @@ class Boid {
     /**
      * 
      */
-    updateBoidProperties(camera, boids) {
+    updateBoidProperties(camera, boids, leader) {
         if (!this.isLeader) {
             this.avoidEdges(camera);
-            this.updateBoidPosition(boids);
+            this.updateBoidPosition(boids, leader);
             this.rotateTowardsDirection();
             this.updateBoidScale(camera);
         }
@@ -69,10 +72,11 @@ class Boid {
     /**
      * 
      */
-    updateBoidPosition(boids) {
+    updateBoidPosition(boids, leader) {
         this.alignmentSteer(boids);
         this.cohesionSteer(boids);
         this.separationSteer(boids);
+        this.steerTowardsLeader(leader);
         
         const maxSpeed = 3;
         const minSpeed = 1;
@@ -199,6 +203,18 @@ class Boid {
         }
         return steering;
 
+    }
+
+   
+    steerTowardsLeader(leader) {
+        const previousSpeed = this.speed.clone();
+        const previousPosition = this.position.clone();
+
+        const d = this.position.distanceTo(leader.position);
+        const steerVector = leader.position.clone().sub(previousPosition).divideScalar(d * this.followLeaderCoefficient);
+
+        this.speed.copy(previousSpeed.add(steerVector));
+        
     }
 
     /**
