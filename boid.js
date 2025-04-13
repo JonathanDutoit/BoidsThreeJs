@@ -1,97 +1,225 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+import * as THREE from 'three';
 
 class Boid {
+    /**
+     * - Coefficients: take values between [0, 1] and represents how "fast" or "strong" the corresponding property is applied to Boids. 
+     * @param {*} alignmentCoefficient 
+     * @param {*} cohesionCoefficient 
+     * @param {*} separationCoefficient 
+     * @param {*} followLeaderCoefficient
+     * @param {*} alignmentRadius
+     * @param {*} cohesionRadius 
+     * @param {*} separationRadius
+     * @param {*} turnFactor 
+     * @param {*} isLeader 
+     */
     constructor(
-        maxForce = 20,
-        maxSpeed = 10,
-        alignRadius = 51,
-        separationRadius = 25,
-        cohesionRadius = 50,
-        showArrows = false,
-        showDebug = false,
-        isLeader = false
+        alignmentCoefficient,
+        cohesionCoefficient,
+        separationCoefficient,
+        followLeaderCoefficient,
+        alignmentRadius,
+        cohesionRadius,
+        separationRadius,
+        turnFactor,
+        isLeader
     ) {
         // Boid properties
-        this.maxForce = randomInRange(maxForce - 10, maxForce);
-        this.maxSpeed = maxSpeed;
-        this.alignRadius = alignRadius;
-        this.separationRadius = separationRadius;
+        this.alignmentCoefficient = alignmentCoefficient;
+        this.cohesionCoefficient = cohesionCoefficient;
+        this.separationCoefficient = separationCoefficient;
+        this.followLeaderCoefficient = followLeaderCoefficient;
+        this.alignmentRadius = alignmentRadius;
         this.cohesionRadius = cohesionRadius;
+        this.separationRadius = separationRadius;
+        this.turnFactor = turnFactor;
         this.isLeader = isLeader;
 
-       
         // Boid mesh
         this.mesh = new THREE.Mesh(
-            new THREE.ConeGeometry(6, 10, 10),
+            new THREE.ConeGeometry(1, 2, 8),
             new THREE.MeshBasicMaterial({ color: isLeader ? 0x0000ff : 0xff0000, wireframe: true })
         );
 
         // Initialize position, speed, and acceleration
         this.position = new THREE.Vector3(
-            randomInRange(10, 20),
-            randomInRange(10, 20),
-            5
+            THREE.MathUtils.randInt(-400, 400),
+            THREE.MathUtils.randInt(0, 500),
+            THREE.MathUtils.randInt(0, 10)
         );
+
         this.speed = new THREE.Vector3(
-            0,
-            randomInRange(0, this.maxSpeed),
-            randomInRange(0, this.maxSpeed)
+            THREE.MathUtils.randInt(-1, 1),
+            THREE.MathUtils.randInt(-1, 1),
+            THREE.MathUtils.randInt(-1, 1)
         );
-        this.acceleration = new THREE.Vector3(0, 0, 0);
 
         this.mesh.position.copy(this.position);
+    }
 
-        // Debugging tools
-        if (showArrows) {
-            this.speedArrow = new THREE.ArrowHelper(this.speed.clone().normalize(), this.position, 1, 0x00ff00);
-            this.accelerationArrow = new THREE.ArrowHelper(this.acceleration.clone().normalize(), this.position, 1, 0xff0000);
-        }
-
-        if (showDebug) {
-            // Alignement is green
-            this.debugAlignSphere = new THREE.Mesh(
-                new THREE.SphereGeometry(this.alignRadius, 16, 16),
-                new THREE.MeshBasicMaterial({ wireframe: true, color: 0x00ff00 })
-            );
-             // Separation is red
-            this.debugSeparationSphere = new THREE.Mesh(
-                new THREE.SphereGeometry(this.separationRadius, 16, 16),
-                new THREE.MeshBasicMaterial({ wireframe: true, color: 0xff0000 })
-            );
-             // Cohesion is blue
-            this.debugCohesionSphere = new THREE.Mesh(
-                new THREE.SphereGeometry(this.cohesionRadius, 16, 16),
-                new THREE.MeshBasicMaterial({ wireframe: true, color: 0x0000ff })
-            );
-            this.mesh.add(this.debugAlignSphere, this.debugSeparationSphere, this.debugCohesionSphere);
+    /**
+     * 
+     */
+    updateBoidProperties(camera, boids, leader) {
+        if (!this.isLeader) {
+            this.avoidEdges(camera);
+            this.updateBoidPosition(boids, leader);
+            this.rotateTowardsDirection();
+            this.updateBoidScale(camera);
         }
     }
 
-    applyForce(force) {
-        this.acceleration.add(force);
-    }
-
-    updatePosition() {
-        this.speed.add(this.acceleration).clampLength(0, this.maxSpeed);
-        this.position.add(this.speed);
-        this.mesh.position.copy(this.position);
-        this.acceleration.set(0, 0, 0);
-
-        if (this.speedArrow) this.updateArrows();
+    /**
+     * 
+     */
+    updateBoidPosition(boids, leader) {
+        this.alignmentSteer(boids);
+        this.cohesionSteer(boids);
+        this.separationSteer(boids);
+        this.steerTowardsLeader(leader);
         
-        this.rotateTowardsDirection();
+        const maxSpeed = 4;
+        const minSpeed = 2;
+
+        
+        this.speed.clampLength(minSpeed, maxSpeed);
+
+        this.position.add(this.speed);
+
+        this.mesh.position.copy(this.position);
+    }
+    /**
+     * Updates the scaling so that it gets smaller as it goes further away, or bigger when it gets closer to the camera
+     * @param {*} camera 
+     */
+    updateBoidScale(camera) {
+        const distance = Math.max(0.1, camera.position.distanceTo(this.position));
+        const scale = Math.log(distance + 1); // Logarithmic scaling
+        this.mesh.scale.set(scale, scale, scale);
     }
 
-    updateArrows() {
-        this.speedArrow.setDirection(this.speed.clone().normalize());
-        this.speedArrow.setLength(1);
-        this.speedArrow.position.copy(this.position);
+    /**
+     * 
+     * @param {*} camera 
+     */
+    avoidEdges(camera) {
+        const margin = 0.3; // Distance from edge to start avoiding
 
-        this.accelerationArrow.setDirection(this.acceleration.clone().normalize());
-        this.accelerationArrow.setLength(1);
-        this.accelerationArrow.position.copy(this.position);
+        const projectedPosition = this.position.clone().project(camera);
+        if (projectedPosition.x > 1 - margin) {
+            this.speed.add(new THREE.Vector3(-this.turnFactor, 0, 0));
+        } 
+        if (projectedPosition.x < -1 + margin) {
+            this.speed.add(new THREE.Vector3(this.turnFactor, 0, 0));
+        }
+        if(projectedPosition.y > 1 - margin) {
+            this.speed.add(new THREE.Vector3(0, -this.turnFactor, 0));
+        }
+        if(projectedPosition.y < -1 + margin) {
+            this.speed.add(new THREE.Vector3(0, this.turnFactor, 0));
+        }
+        if((projectedPosition.z -0.999) * 1000 > 1 - margin) {
+            this.speed.add(new THREE.Vector3(0, 0, -2 * this.speed.z));
+        }
+        if((projectedPosition.z -0.999) * 1000 < -1 + margin) {
+            this.speed.add(new THREE.Vector3(0, 0, - 2 * this.speed.z));
+        }
     }
 
+    /**
+     * 
+     */
+    alignmentSteer(boids) {
+        const groupVelocity = new THREE.Vector3();
+        const tempVector = new THREE.Vector3();
+        let nbBoidsInRadius = 0;
+
+        for (let neighbor of boids) {
+            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.alignmentRadius) {
+                tempVector.copy(neighbor.speed);
+                groupVelocity.add(tempVector);
+
+                nbBoidsInRadius++;
+            }
+        }
+
+        if (nbBoidsInRadius > 0) {
+            groupVelocity.divideScalar(nbBoidsInRadius);
+
+            const previousSpeed = this.speed.clone();
+
+            // sub( v: Vector3) -> substracts v from this vector 
+            const steerVector = groupVelocity.sub(previousSpeed).multiplyScalar(this.alignmentCoefficient);
+            this.speed.copy(previousSpeed.add(steerVector));
+        }
+    }
+
+    /**
+     * 
+     */
+    cohesionSteer(boids) {
+        const groupPosition = new THREE.Vector3();
+        let nbBoidsInRadius = 0;
+
+        for (let neighbor of boids) {
+            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.cohesionRadius) {
+                groupPosition.add(neighbor.position);
+                nbBoidsInRadius++;
+            }
+        }
+
+        if (nbBoidsInRadius > 0) {
+            groupPosition.divideScalar(nbBoidsInRadius);
+
+            const previousPosition = this.position.clone();
+            const previousSpeed = this.speed.clone();
+
+
+            // sub( v: Vector3) -> substracts v from this vector 
+            const steerVector = groupPosition.sub(previousPosition).multiplyScalar(this.cohesionCoefficient);
+            this.speed.copy(previousSpeed.add(steerVector));
+        }
+    }
+
+    /**
+     * 
+     */
+    separationSteer(boids) {
+        const steering = new THREE.Vector3();
+        const tempVector = new THREE.Vector3(); // Reusable vector
+        let nbBoidsInRadius = 0;
+
+        for (let neighbor of boids) {
+            const d = this.position.distanceTo(neighbor.position);
+            if (neighbor !== this && d < this.separationRadius) {
+                tempVector.subVectors(this.position, neighbor.position).divideScalar(d);
+                steering.add(tempVector);
+                nbBoidsInRadius++;
+            }
+        }
+
+        if (nbBoidsInRadius > 0) {
+            this.speed.add(steering.multiplyScalar(this.separationCoefficient));
+        }
+        return steering;
+
+    }
+
+   
+    steerTowardsLeader(leader) {
+        const previousSpeed = this.speed.clone();
+        const previousPosition = this.position.clone();
+
+        const d = this.position.distanceTo(leader.position);
+        const steerVector = leader.position.clone().sub(previousPosition).divideScalar(d * d).multiplyScalar(this.followLeaderCoefficient);
+
+        this.speed.copy(previousSpeed.add(steerVector));
+        
+    }
+
+    /**
+     * 
+     */
     rotateTowardsDirection() {
         const direction = this.speed.clone().normalize();
         const axis = new THREE.Vector3(0, 1, 0); // Assuming the fish is initially pointing up (along Y-axis)
@@ -101,124 +229,9 @@ class Boid {
         this.mesh.quaternion.slerp(targetQuaternion, 0.1);
     }
 
-    getCameraView(camera, dist) {
-        const vFOV = THREE.MathUtils.degToRad(camera.fov);
-        const height = 2 * Math.tan(vFOV / 2) * dist;
-        const width = height * camera.aspect;
-        return { width, height };
+    getLeader() {
+        return this.isLeader;
     }
-
-    edges(camera) {
-        const { width, height } = this.getCameraView(camera, camera.position.distanceTo(this.position));
-        if (this.position.x > width / 2) this.position.x = -width / 2;
-        else if (this.position.x < -width / 2) this.position.x = width / 2;
-        if (this.position.y > height / 2) this.position.y = -height / 2;
-        else if (this.position.y < -height / 2) this.position.y = height / 2;
-        if (this.position.z > camera.position.z / 2) this.position.z = 0;
-        else if (this.position.z < 0) this.position.z = camera.position.z / 2;
-    }
-
-    avoidEdges(camera) {
-        const { width, height } = this.getCameraView(camera, camera.position.distanceTo(this.position));
-        const margin = 0.1; // Distance from edge to start avoiding
-
-        if (this.position.x > width / 2 - margin) this.applyForce(new THREE.Vector3(-this.maxForce, 0, 0));
-        else if (this.position.x < -width / 2 + margin) this.applyForce(new THREE.Vector3(this.maxForce, 0, 0));
-        if (this.position.y > height / 2 - margin) this.applyForce(new THREE.Vector3(0, -this.maxForce, 0));
-        else if (this.position.y < -height / 2 + margin) this.applyForce(new THREE.Vector3(0, this.maxForce, 0));
-    }
-
-    updateScale(camera) {
-        const distance = Math.max(0.1, camera.position.distanceTo(this.position));
-        const scale = Math.log(distance + 1); // Logarithmic scaling
-        this.mesh.scale.set(scale, scale, scale);
-    }
-
-    update(camera) {
-        this.edges(camera);
-        this.avoidEdges(camera);
-        this.updatePosition();
-        this.updateScale(camera);
-    }
-
-    align(boids) {
-        const groupVelocity = new THREE.Vector3();
-        const tempVector = new THREE.Vector3(); // Reusable vector
-        let total = 0;
-
-        for (let neighbor of boids) {
-            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.alignRadius) {
-                tempVector.copy(neighbor.speed);
-                groupVelocity.add(tempVector);
-                total++;
-            }
-        }
-
-        if (total > 0) {
-            groupVelocity.divideScalar(total).clampLength(0, this.maxForce);
-        }
-        return groupVelocity;
-    }
-
-    separation(boids) {
-        const steering = new THREE.Vector3();
-        const tempVector = new THREE.Vector3(); // Reusable vector
-        let total = 0;
-
-        for (let neighbor of boids) {
-            const d = this.position.distanceTo(neighbor.position);
-            if (neighbor !== this && d < this.separationRadius) {
-                tempVector.subVectors(this.position, neighbor.position).divideScalar(d);
-                steering.add(tempVector);
-                total++;
-            }
-        }
-
-        if (total > 0) {
-            steering.divideScalar(total).clampLength(0, this.maxForce);
-        }
-        return steering;
-    }
-
-    cohesion(boids) {
-        const groupPosition = new THREE.Vector3();
-        let total = 0;
-
-        for (let neighbor of boids) {
-            if (neighbor !== this && this.position.distanceTo(neighbor.position) < this.cohesionRadius) {
-                groupPosition.add(neighbor.position);
-                total++;
-            }
-        }
-
-        if (total > 0) {
-            groupPosition.divideScalar(total).sub(this.position).clampLength(0, this.maxForce);
-        }
-        return groupPosition;
-    }
-
-    followLeader(curve, t) {
-        if (!this.isLeader) {
-            const target = curve.getPointAt(t);
-            const desired = new THREE.Vector3().subVectors(target, this.position).normalize().multiplyScalar(this.maxSpeed);
-            const steer = new THREE.Vector3().subVectors(desired, this.speed).clampLength(0, this.maxForce);
-            this.applyForce(steer);
-        }
-    }
-
-    flock(boids, curve, t) {
-        if (!this.isLeader) {
-            this.applyForce(this.align(boids));
-            this.applyForce(this.separation(boids));
-            this.applyForce(this.cohesion(boids));
-            //this.followLeader(curve, t);
-        }
-    }
-}
-
-// Helper function to generate a random value within a range
-function randomInRange(min, max) {
-    return Math.random() * (max - min) + min;
 }
 
 export default Boid;

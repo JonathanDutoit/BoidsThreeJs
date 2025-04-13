@@ -5,8 +5,9 @@
  * along with additional boids that follow the leader using flocking behavior.
  */
 
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
+import * as THREE from 'three';
 import Boid from './boid.js';
+import GUI from 'lil-gui';
 
 // Create the scene
 const scene = new THREE.Scene();
@@ -15,16 +16,15 @@ scene.background = new THREE.Color(0x000000);
 /**
  * Creates a perspective camera for the scene.
  * 
- * @param {number} 50 - Field of view (FOV) in degrees. Determines how wide the camera's view is.
+ * @param {number} 70 - Field of view (FOV) in degrees. Determines how wide the camera's view is.
  * @param {number} window.innerWidth / window.innerHeight - Aspect ratio of the camera.
- * @param {number} 0.1 - Near clipping plane. Objects closer than this distance won't be rendered.
- * @param {number} 10 - Far clipping plane. Objects farther than this distance won't be rendered.
+ * @param {number} 1 - Near clipping plane. Objects closer than this distance won't be rendered.
+ * @param {number} 10000 - Far clipping plane. Objects farther than this distance won't be rendered.
  * 
  * A higher FOV makes the view appear more distorted (wide-angle), while a lower FOV gives a zoomed-in effect.
  */
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10000);
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
 camera.position.set(0, 250, 1000);
-
 
 // Create the renderer
 const renderer = new THREE.WebGLRenderer();
@@ -34,45 +34,86 @@ document.body.appendChild(renderer.domElement);
 /**
  * Creates an adaptive Catmull-Rom curve that scales with the window size.
  */
-/**
- * Creates an adaptive Catmull-Rom curve that scales with the window size.
- */
-const basePoints = [
-    [494, 528, -145], [-88, 256, 207], [-355, 280, 547],
-    [-409, 551, -12], [-222, 400, -97], [37, 47, 246],
-    [641, 120, -228], [585, 528, -342]
-];
-const scaleFactor = Math.min(window.innerWidth, window.innerHeight) / 500;
+const basePoints = [[294, 441, -454],
+    [110, 11, -300],
+    [1000, -400, -500],
+    [959, 0, -228],
+    [-562, 784, -100],
+    [-478, 175, 212],
+    [300, 784, -256],
+    [294, 441, -454],
+    [-1145, -299, -679],
+    [-856, 372, -871],
+    [-100, 830, -742],
+    [165, 679, -620],
+    [294, 441, -454]
+]
+
+const scaleFactor = Math.min(window.innerWidth, window.innerHeight) / 1000;
 const curve = new THREE.CatmullRomCurve3(basePoints.map(p => new THREE.Vector3(p[0] * scaleFactor, p[1] * scaleFactor, p[2] * scaleFactor)));
 
-
+// Array to store boids
+const boids = [];
 
 /**
  * Creates the leader boid with specific movement parameters.
  */
-const leader = new Boid(10, 0.02, 0.2, 0.075, 0.1, true, false, true);
+
+const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 10, 5, 2, true);
+boids.push(leader);
 scene.add(leader.mesh);
 
 
-// Uncomment the lines below to visualize acceleration and speed vectors
-// scene.add(leader.accelerationArrow);
-// scene.add(leader.speedArrow);
+const gui = new GUI();
+const boidSettings = {
+    alignmentCoefficient: 0.009,
+    cohesionCoefficient: 0.000003,
+    separationCoefficient: 0.1,
+    followLeaderCoefficient: 20,
+    alignmentRadius: 80,
+    cohesionRadius: 80,
+    separationRadius: 40,
+    turnFactor: 0.05,
+};
 
-// Array to store boids
-const boids = [];
+// Define parameter ranges
+const settingRanges = {
+    alignmentCoefficient: [0, 1],
+    cohesionCoefficient: [0, 0.1],
+    separationCoefficient: [0, 1],
+    followLeaderCoefficient: [0.1, 100],
+    alignmentRadius: [0, 1000],
+    cohesionRadius: [0, 1000],
+    separationRadius: [0, 200],
+    turnFactor: [0, 5]
+};
+
+// Create GUI dynamically
+Object.entries(settingRanges).forEach(([key, [min, max]]) => {
+    gui.add(boidSettings, key, min, max).onChange(value => {
+        boids.forEach(boid => boid[key] = value);
+    });
+});
 
 
 /**
  * Initializes additional boids and adds them to the scene.
  * Currently, the loop is set to zero boids (change the loop condition to add more).
  */
-for (let i = 0; i < 100; i++) {
-    const boid = new Boid();
+for (let i = 0; i < 250; i++) {
+    const boid = new Boid(
+        boidSettings.alignmentCoefficient,
+        boidSettings.cohesionCoefficient,
+        boidSettings.separationCoefficient,
+        boidSettings.followLeaderCoefficient,
+        boidSettings.alignmentRadius,
+        boidSettings.cohesionRadius,
+        boidSettings.separationRadius,
+        boidSettings.turnFactor,
+        false);
+
     boids.push(boid);
     scene.add(boid.mesh);
-    // Uncomment to visualize acceleration and speed vectors
-    // scene.add(boid.accelerationArrow);
-    // scene.add(boid.speedArrow);
 }
 
 
@@ -93,7 +134,7 @@ function formatTime(seconds) {
 setInterval(() => {
     const timeElement = document.getElementById('elapsed-time');
     if (timeElement) {
-        timeElement.innerText = `Elapsed Time: ${formatTime(currentTime * 10)}`;
+        timeElement.innerText = `Elapsed Time: ${formatTime(currentTime * 10)} | Leader coords: (${leader.position.x.toFixed(0)}, ${leader.position.y.toFixed(0)}, ${leader.position.z.toFixed(0)})`;
     }
 }, 10);
 
@@ -104,22 +145,22 @@ function animate() {
     requestAnimationFrame(animate);
 
     let now = performance.now();
-    let deltaTime = (now - lastUpdateTime) / 10000; // Convert to seconds
+    let deltaTime = (now - lastUpdateTime) / 33000; // Convert to seconds
     lastUpdateTime = now;
 
     currentTime = (currentTime + deltaTime) % 1;
-    
 
-    // Update leader position along the curve
+
     const prevPosition = leader.position.clone();
     leader.position.copy(curve.getPointAt(currentTime));
     leader.speed.copy(leader.position.clone().sub(prevPosition));
-    leader.update(camera);
+    leader.updateBoidScale(camera);
+    leader.rotateTowardsDirection(camera);
+    leader.mesh.position.copy(leader.position);
 
     // Update all boids
     for (let boid of boids) {
-        boid.flock(boids, curve, currentTime);
-        boid.update(camera);
+        boid.updateBoidProperties(camera, boids, leader);
     }
 
     // Render the scene
@@ -133,7 +174,7 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     // Update curve dynamically on resize
-    const newScaleFactor = Math.min(window.innerWidth, window.innerHeight) / 500;
+    const newScaleFactor = Math.min(window.innerWidth, window.innerHeight) / 1000;
     curve.points.forEach((point, index) => {
         const basePoints = [
             [494, 528, -145], [-88, 256, 207], [-355, 280, 547],
