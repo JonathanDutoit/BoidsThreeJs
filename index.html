@@ -14,7 +14,7 @@
             display: block;
         }
 
-        #elapsed-time {
+        #elapsed-time, #buttons {
             position: absolute;
             display: flex;
             top: 10px;
@@ -24,6 +24,11 @@
             background: rgba(0, 0, 0, 0.5);
             padding: 5px;
             border-radius: 3px;
+        }
+
+        #buttons {
+            right: 0px;
+            left: 0px;
         }
 
 
@@ -42,8 +47,11 @@
 <body>
     <div id="elapsed-time">
         <p>Elapsed Time: 0.00s</p>
-        
         <p>Leader coords: (x: 0, y:0, z:0)</p>
+    </div>
+
+    <div id="buttons">
+        <button id="toggle-leader">LEADER</button>
     </div>
     <script type="module" src="main.js"></script>
 </body>

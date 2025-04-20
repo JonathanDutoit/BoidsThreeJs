@@ -1,5 +1,5 @@
 /**
- * Boid Simulation using Three.js
+ * 3D Boid Simulation using Three.js
  * 
  * This script creates a 3D simulation of a leader boid following a cubic Bézier curve,
  * along with additional boids that follow the leader using flocking behavior.
@@ -16,14 +16,15 @@ scene.background = new THREE.Color(0x000000);
 /**
  * Creates a perspective camera for the scene.
  * 
- * @param {number} 70 - Field of view (FOV) in degrees. Determines how wide the camera's view is.
+ * @param {number} 50 - Field of view (FOV) in degrees. Determines how wide the camera's view is.
  * @param {number} window.innerWidth / window.innerHeight - Aspect ratio of the camera.
  * @param {number} 1 - Near clipping plane. Objects closer than this distance won't be rendered.
- * @param {number} 10000 - Far clipping plane. Objects farther than this distance won't be rendered.
+ * @param {number} 20000 - Far clipping plane. Objects farther than this distance won't be rendered.
  * 
  * A higher FOV makes the view appear more distorted (wide-angle), while a lower FOV gives a zoomed-in effect.
  */
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
+
 camera.position.set(0, 250, 1000);
 
 // Create the renderer
@@ -32,22 +33,22 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 /**
- * Creates an adaptive Catmull-Rom curve that scales with the window size.
+ * Base points for the leader trajectory's **spline curve**.
  */
 const basePoints = [[294, 441, -454],
-    [110, 11, -300],
-    [1000, -400, -500],
-    [959, 0, -228],
-    [-562, 784, -100],
-    [-478, 175, 212],
-    [300, 784, -256],
-    [294, 441, -454],
-    [-1145, -299, -679],
-    [-856, 372, -871],
-    [-100, 830, -742],
-    [165, 679, -620],
-    [294, 441, -454]
-]
+[110, 11, -300],
+[1000, -400, -500],
+[959, 0, -228],
+[-562, 784, -100],
+[-478, 175, 212],
+[300, 784, -256],
+[294, 441, -454],
+[-1145, -299, -679],
+[-856, 372, -871],
+[-100, 830, -742],
+[165, 679, -620],
+[294, 441, -454]
+];
 
 const scaleFactor = Math.min(window.innerWidth, window.innerHeight) / 1000;
 const curve = new THREE.CatmullRomCurve3(basePoints.map(p => new THREE.Vector3(p[0] * scaleFactor, p[1] * scaleFactor, p[2] * scaleFactor)));
@@ -176,10 +177,19 @@ window.addEventListener('resize', () => {
     // Update curve dynamically on resize
     const newScaleFactor = Math.min(window.innerWidth, window.innerHeight) / 1000;
     curve.points.forEach((point, index) => {
-        const basePoints = [
-            [494, 528, -145], [-88, 256, 207], [-355, 280, 547],
-            [-409, 551, -12], [-222, 400, -97], [37, 47, 246],
-            [641, 120, -228], [585, 528, -342]
+        const basePoints = [[294, 441, -454],
+        [110, 11, -300],
+        [1000, -400, -500],
+        [959, 0, -228],
+        [-562, 784, -100],
+        [-478, 175, 212],
+        [300, 784, -256],
+        [294, 441, -454],
+        [-1145, -299, -679],
+        [-856, 372, -871],
+        [-100, 830, -742],
+        [165, 679, -620],
+        [294, 441, -454]
         ];
         point.set(
             basePoints[index][0] * newScaleFactor,
