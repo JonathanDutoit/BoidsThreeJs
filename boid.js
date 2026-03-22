@@ -85,11 +85,11 @@ class Boid {
     }
 
     /**
-     * Updates Boids scaling based on camera configuration
+     * Updates Boids with logarithmic distance scaling based on camera position and configuration
      */
     updateBoidScale(camera) {
-        const distance = Math.max(0.1, camera.position.distanceTo(this.position));
-        const scale = Math.log(distance + 1);
+        const distance = Math.max(camera.near, camera.position.distanceTo(this.position));
+        const scale = Math.log(distance);
         this.mesh.scale.set(scale, scale, scale);
     }
 
@@ -97,7 +97,7 @@ class Boid {
      * When boids goes closer to an edge, they are dragged in the opposite direction
      */
     avoidEdges(camera) {
-        const margin = 0.2;
+        const margin = 0.3;
         const p = this.position.clone().project(camera);
         const push = new THREE.Vector3();
 
@@ -105,6 +105,7 @@ class Boid {
         if (p.x < -1 + margin) push.x += this.turnFactor;
         if (p.y > 1 - margin)  push.y -= this.turnFactor;
         if (p.y < -1 + margin) push.y += this.turnFactor;
+        // In the z direction, we make the boid turn completely 
         if (p.z > 1 - margin)  push.z -= 2 * this.speed.z;
         if (p.z < -1 + margin) push.z += 2 * this.speed.z;
 
@@ -112,7 +113,9 @@ class Boid {
     }
 
     
-
+    /**
+     * Alignment force - match the average velocity of nearby boid
+     */
     alignmentSteer(boids) {
         const groupVelocity = new THREE.Vector3();
         const tempVector = new THREE.Vector3();
@@ -134,6 +137,9 @@ class Boid {
         }
     }
 
+    /**
+     * Cohesion force - steer towards the average position of nearby boids
+     */
     cohesionSteer(boids) {
         const groupPosition = new THREE.Vector3();
         let nbBoidsInRadius = 0;
@@ -154,6 +160,9 @@ class Boid {
         }
     }
 
+    /**
+     * Separation force - push away from boids that are too close
+     */
     separationSteer(boids) {
         const steering = new THREE.Vector3();
         const tempVector = new THREE.Vector3();
@@ -190,7 +199,10 @@ class Boid {
 
         this.speed.copy(previousSpeed.add(steerVector));
     }
-
+    
+    /**
+     * Rotates the mesh axis towards it's speed direction 
+     */
     rotateTowardsDirection() {
         const direction = this.speed.clone().normalize();
         const axis = new THREE.Vector3(0, 1, 0);

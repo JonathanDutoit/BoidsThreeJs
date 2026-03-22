@@ -61,8 +61,8 @@ class SteeringConfig {
 class SpawningConfig {
     constructor({
         spawnRangeX = [-400, 400],
-        spawnRangeY = [0, 500],
-        spawnRangeZ = [0, 10],
+        spawnRangeY = [-300, 300],
+        spawnRangeZ = [-200, 200],
     } = {}) {
         this.spawnRangeX = spawnRangeX;
         this.spawnRangeY = spawnRangeY;

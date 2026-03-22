@@ -38,6 +38,8 @@ export default class ResizeSystem {
         config.scaleFactor = Math.min(width, height) / config.baseScaleReference;
     }
 
+    
+
     dispose() {
         this.observer.disconnect();
     }

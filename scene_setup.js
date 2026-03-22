@@ -6,7 +6,6 @@ export default class SceneSetup {
         this.container = container;
 
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x000000);
 
         this.camera = new THREE.PerspectiveCamera(
             config.fov,
@@ -15,10 +14,17 @@ export default class SceneSetup {
             config.far
         );
         this.camera.position.copy(config.position);
+        this.camera.updateProjectionMatrix();
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setPixelRatio(window.devicePixelRatio);
 
         this.container.appendChild(this.renderer.domElement);
+    }
+
+    visibleSizeAtDepth(depth) {
+        const halfFovRad = (this.config.fov / 2) * (Math.PI / 180);
+        const height = 2 * depth * Math.tan(halfFovRad);
+        return { width: height * this.camera.aspect, height };
     }
 }

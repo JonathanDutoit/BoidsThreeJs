@@ -13,14 +13,15 @@ import SceneSetup from './scene_setup.js';
 import WorldConfig from './world_config.js';
 import ResizeSystem from './resize_system.js';
 
-// Create the scene
-const container = document.getElementById('app'); // IMPORTANT
+const container = document.getElementById('app'); 
 
+// Create the scene
 const worldConfig = new WorldConfig();
 const sceneSetup = new SceneSetup(worldConfig, container);
 const resizeSystem = new ResizeSystem(sceneSetup);
 const { scene, camera, renderer } = sceneSetup;
 
+// TODO: Change leader behavior in separate file
 /**
  * Base points for the leader trajectory's spline curve.
  * Defined once at the top level so it can be reused in the resize handler.
@@ -65,7 +66,7 @@ const boids = [];
  */
 const leader = new Boid(new BoidConfig({
     isLeader:  true,
-    rendering: new RenderingConfig({ color: 0x0000ff }),
+    rendering: new RenderingConfig({ meshColor: 0x0000ff }),
 }));
 leader.active = false; // Controls whether boids follow this leader
 boids.push(leader);
@@ -109,8 +110,15 @@ Object.entries(settingRanges).forEach(([key, [min, max]]) => {
 /**
  * Initializes additional boids and adds them to the scene.
  */
-for (let i = 0; i < 250; i++) {
-    const boid = new Boid(new BoidConfig());
+for (let i = 0; i < 100; i++) {
+    const { width, height } = sceneSetup.visibleSizeAtDepth(worldConfig.position.z);
+    const boid = new Boid(new BoidConfig({
+        spawning: new SpawningConfig({
+            spawnRangeX: [-width / 2,  width / 2],
+            spawnRangeY: [-height / 2, height / 2],
+            spawnRangeZ: [0, 500],
+        })
+    }));
     boids.push(boid);
     scene.add(boid.mesh);
 }
