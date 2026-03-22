@@ -8,50 +8,54 @@
 import * as THREE from 'three';
 import Boid from './boid.js';
 import GUI from 'lil-gui';
+import BoidConfig, { SteeringConfig, SpawningConfig, RenderingConfig }  from './boid_config';
+import SceneSetup from './scene_setup.js';
+import WorldConfig from './world_config.js';
+import ResizeSystem from './resize_system.js';
 
 // Create the scene
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000);
+const container = document.getElementById('app'); // IMPORTANT
+
+const worldConfig = new WorldConfig();
+const sceneSetup = new SceneSetup(worldConfig, container);
+const resizeSystem = new ResizeSystem(sceneSetup);
+const { scene, camera, renderer } = sceneSetup;
 
 /**
- * Creates a perspective camera for the scene.
- * 
- * @param {number} 50 - Field of view (FOV) in degrees. Determines how wide the camera's view is.
- * @param {number} window.innerWidth / window.innerHeight - Aspect ratio of the camera.
- * @param {number} 1 - Near clipping plane. Objects closer than this distance won't be rendered.
- * @param {number} 20000 - Far clipping plane. Objects farther than this distance won't be rendered.
- * 
- * A higher FOV makes the view appear more distorted (wide-angle), while a lower FOV gives a zoomed-in effect.
+ * Base points for the leader trajectory's spline curve.
+ * Defined once at the top level so it can be reused in the resize handler.
  */
-const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
-
-camera.position.set(0, 250, 1000);
-
-// Create the renderer
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
-/**
- * Base points for the leader trajectory's **spline curve**.
- */
-const basePoints = [[294, 441, -454],
-[110, 11, -300],
-[1000, -400, -500],
-[959, 0, -228],
-[-562, 784, -100],
-[-478, 175, 212],
-[300, 784, -256],
-[294, 441, -454],
-[-1145, -299, -679],
-[-856, 372, -871],
-[-100, 830, -742],
-[165, 679, -620],
-[294, 441, -454]
+const basePoints = [
+    [294, 441, -454],
+    [110, 11, -300],
+    [1000, -400, -500],
+    [959, 0, -228],
+    [-562, 784, -100],
+    [-478, 175, 212],
+    [300, 784, -256],
+    [294, 441, -454],
+    [-1145, -299, -679],
+    [-856, 372, -871],
+    [-100, 830, -742],
+    [165, 679, -620],
+    [294, 441, -454]
 ];
 
-const scaleFactor = Math.min(window.innerWidth, window.innerHeight) / 1000;
-const curve = new THREE.CatmullRomCurve3(basePoints.map(p => new THREE.Vector3(p[0] * scaleFactor, p[1] * scaleFactor, p[2] * scaleFactor)));
+const curve = new THREE.CatmullRomCurve3(
+    basePoints.map(p => new THREE.Vector3(
+        p[0] * resizeSystem.sceneSetup.config.scaleFactor,
+        p[1] * resizeSystem.sceneSetup.config.scaleFactor,
+        p[2] * resizeSystem.sceneSetup.config.scaleFactor
+    ))
+);
+
+// Visualize the leader's path as a faint line — only visible in debug mode
+const pathLine = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(curve.getPoints(200)),
+    new THREE.LineBasicMaterial({ color: 0x0000ff, opacity: 0.3, transparent: true })
+);
+pathLine.visible = false;
+scene.add(pathLine);
 
 // Array to store boids
 const boids = [];
@@ -59,8 +63,11 @@ const boids = [];
 /**
  * Creates the leader boid with specific movement parameters.
  */
-
-const leader = new Boid(0.5, 0.5, 0.5, 10, 10, 10, 5, 2, true);
+const leader = new Boid(new BoidConfig({
+    isLeader:  true,
+    rendering: new RenderingConfig({ color: 0x0000ff }),
+}));
+leader.active = false; // Controls whether boids follow this leader
 boids.push(leader);
 scene.add(leader.mesh);
 
@@ -91,31 +98,44 @@ const settingRanges = {
 
 // Create GUI dynamically
 Object.entries(settingRanges).forEach(([key, [min, max]]) => {
-    gui.add(boidSettings, key, min, max).onChange(value => {
-        boids.forEach(boid => boid[key] = value);
+   gui.add(boidSettings, key, min, max).onChange(value => {
+        boids.forEach(boid => {
+            if (boid.steering) boid.steering[key] = value;
+            else boid[key] = value;
+        });
     });
 });
 
-
 /**
  * Initializes additional boids and adds them to the scene.
- * Currently, the loop is set to zero boids (change the loop condition to add more).
  */
 for (let i = 0; i < 250; i++) {
-    const boid = new Boid(
-        boidSettings.alignmentCoefficient,
-        boidSettings.cohesionCoefficient,
-        boidSettings.separationCoefficient,
-        boidSettings.followLeaderCoefficient,
-        boidSettings.alignmentRadius,
-        boidSettings.cohesionRadius,
-        boidSettings.separationRadius,
-        boidSettings.turnFactor,
-        false);
-
+    const boid = new Boid(new BoidConfig());
     boids.push(boid);
     scene.add(boid.mesh);
 }
+
+/**
+ * Toggle leader button — hides the leader mesh and stops boids from following it.
+ */
+let leaderVisible = true;
+document.getElementById('toggle-leader').addEventListener('click', () => {
+    leaderVisible = !leaderVisible;
+    leader.mesh.visible = leaderVisible;
+    leader.active = leaderVisible;
+    document.getElementById('toggle-leader').style.opacity = leaderVisible ? 1 : 0.4;
+
+});
+
+/**
+ * Debug mode — shows the leader path line
+ */
+let debugMode = false;
+document.getElementById('toggle-debug').addEventListener('click', () => {
+    debugMode = !debugMode;
+    pathLine.visible = debugMode;
+    document.getElementById('toggle-debug').style.opacity = debugMode ? 1 : 0.4;
+});
 
 
 let currentTime = 0;
@@ -128,14 +148,13 @@ let lastUpdateTime = performance.now();
  */
 function formatTime(seconds) {
     return seconds.toFixed(2) + 's';
-
 }
 
 // Update the elapsed time display every 10ms
 setInterval(() => {
     const timeElement = document.getElementById('elapsed-time');
     if (timeElement) {
-        timeElement.innerText = `Elapsed Time: ${formatTime(currentTime * 10)} | Leader coords: (${leader.position.x.toFixed(0)}, ${leader.position.y.toFixed(0)}, ${leader.position.z.toFixed(0)})`;
+        timeElement.innerText = `Elapsed Time: ${formatTime(currentTime * 10)}`;
     }
 }, 10);
 
@@ -146,12 +165,10 @@ function animate() {
     requestAnimationFrame(animate);
 
     let now = performance.now();
-    let deltaTime = (now - lastUpdateTime) / 33000; // Convert to seconds
+    let deltaTime = (now - lastUpdateTime) / (worldConfig.targetFrameMs * 1000);
     lastUpdateTime = now;
 
     currentTime = (currentTime + deltaTime) % 1;
-
-
     const prevPosition = leader.position.clone();
     leader.position.copy(curve.getPointAt(currentTime));
     leader.speed.copy(leader.position.clone().sub(prevPosition));
@@ -161,43 +178,12 @@ function animate() {
 
     // Update all boids
     for (let boid of boids) {
-        boid.updateBoidProperties(camera, boids, leader);
+        boid.mainBoidUpdateLoop(camera, boids, leader);
     }
 
     // Render the scene
     renderer.render(scene, camera);
 }
-
-// Handle window resize
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-
-    // Update curve dynamically on resize
-    const newScaleFactor = Math.min(window.innerWidth, window.innerHeight) / 1000;
-    curve.points.forEach((point, index) => {
-        const basePoints = [[294, 441, -454],
-        [110, 11, -300],
-        [1000, -400, -500],
-        [959, 0, -228],
-        [-562, 784, -100],
-        [-478, 175, 212],
-        [300, 784, -256],
-        [294, 441, -454],
-        [-1145, -299, -679],
-        [-856, 372, -871],
-        [-100, 830, -742],
-        [165, 679, -620],
-        [294, 441, -454]
-        ];
-        point.set(
-            basePoints[index][0] * newScaleFactor,
-            basePoints[index][1] * newScaleFactor,
-            basePoints[index][2] * newScaleFactor
-        );
-    });
-});
 
 // Start the animation loop
 animate();

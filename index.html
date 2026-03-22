@@ -45,15 +45,16 @@
 </head>
 
 <body>
-    <div id="elapsed-time">
-        <p>Elapsed Time: 0.00s</p>
-        <p>Leader coords: (x: 0, y:0, z:0)</p>
+    <div id="app" style="width:100%;height:100vh;">
+        <div id="elapsed-time">
+            <span id="elapsed-time-text">Elapsed Time: 0.00s</span>
+        </div>
+        <div id="buttons">
+            <button id="toggle-leader">LEADER</button>
+            <button id="toggle-debug">DEBUG</button>
+        </div>
+        <script type="module" src="main.js"></script>
     </div>
-
-    <div id="buttons">
-        <button id="toggle-leader">LEADER</button>
-    </div>
-    <script type="module" src="main.js"></script>
 </body>
 
 </html>
