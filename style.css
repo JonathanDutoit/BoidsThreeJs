@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+:root {
+    --color-bg: #000000;
+    --color-accent: #0044ff;
+    --color-text: rgba(255, 255, 255, 0.85);
+    --color-ui-bg: rgba(0, 0, 0, 0.55);
+    --color-border: rgba(0, 100, 255, 0.3);
+    --font-mono: 'Share Tech Mono', monospace;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--color-bg);
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+}
+
+/* ── Elapsed time ─────────────────────────────── */
+#elapsed-time {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--color-text);
+    background: var(--color-ui-bg);
+    border: 1px solid var(--color-border);
+    padding: 6px 12px;
+    border-radius: 2px;
+    backdrop-filter: blur(6px);
+    pointer-events: none;
+}
+
+/* ── Buttons — centered at the bottom ────────── */
+#buttons {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+}
+
+button {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-text);
+    background: var(--color-ui-bg);
+    border: 1px solid var(--color-border);
+    padding: 10px 24px;
+    border-radius: 2px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+button:hover {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+/* Dimmed state when toggled off (set via JS opacity) */
+button[style*="opacity: 0.4"],
+button[style*="opacity:0.4"] {
+    border-color: rgba(0, 100, 255, 0.12);
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── lil-gui overrides ────────────────────────── */
+.lil-gui * {
+    font-family: var(--font-mono) !important;
+    font-size: 13px !important;
+}
+
+.lil-gui.root {
+    width: 320px !important;
+}
